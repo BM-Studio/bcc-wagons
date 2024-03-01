@@ -22,6 +22,9 @@ local Cam = false
 local HasJob = false
 local IsWainwright = false
 local Trading = false
+local huntingwagon = false
+local huntingwagonnetid = nil
+
 -- Start Wagons
 CreateThread(function()
     StartPrompts()
@@ -242,8 +245,18 @@ end)
 
 RegisterNUICallback('LoadWagon', function(data, cb)
     cb('ok')
+
     if MyEntity then
+        local exist = NetworkGetEntityFromNetworkId(huntingwagonnetid)
+
+        if exist then
+            TriggerServerEvent('bm-huntingwagon:server:RemoveWagon', huntingwagonnetid)
+
+            huntingwagonnetid = nil
+        end
+
         DeleteEntity(MyEntity)
+
         MyEntity = nil
     end
 
@@ -350,7 +363,16 @@ RegisterNUICallback('LoadMyWagon', function(data, cb)
     LoadWagonModel(model)
 
     if MyEntity then
+        local exist = NetworkGetEntityFromNetworkId(huntingwagonnetid)
+
+        if exist then
+            TriggerServerEvent('bm-huntingwagon:server:RemoveWagon', huntingwagonnetid)
+
+            huntingwagonnetid = nil
+        end
+
         DeleteEntity(MyEntity)
+
         MyEntity = nil
     end
 
@@ -389,9 +411,39 @@ function SpawnWagon(wagonModel, name, menuSpawn, id)
     local model = joaat(wagonModel)
     LoadWagonModel(model)
 
+    huntingwagon = false
+
+    if wagonModel == 'huntercart01' then
+        huntingwagon = true
+    end
+
     if menuSpawn then
         local siteCfg = Config.shops[Site]
-        MyWagon = CreateVehicle(model, siteCfg.wagon.coords, siteCfg.wagon.heading, true, false, false, false)
+
+        if not huntingwagon then
+            MyWagon = CreateVehicle(model, siteCfg.wagon.coords, siteCfg.wagon.heading, true, false, false, false)
+        else
+            local spawnpoint = vector4(siteCfg.wagon.coords.x, siteCfg.wagon.coords.y, siteCfg.wagon.coords.z, siteCfg.wagon.heading)
+
+            TriggerServerEvent('bm-huntingwagon:server:SpawnWagon', spawnpoint)
+
+            Wait(1000)
+
+            MyWagon = exports['bm-huntingwagon']:MyWagonPed()
+
+            if not MyWagon or MyWagon == 0 then
+                VORPcore.NotifyRightTip(_U('wagonSpawnError'), 5000)
+            end
+
+            huntingwagonnetid = exports['bm-huntingwagon']:MyWagon()
+
+            if not huntingwagonnetid then
+                VORPcore.NotifyRightTip(_U('wagonSpawnError'), 5000)
+
+                return
+            end
+        end
+
         Citizen.InvokeNative(0x7263332501E07F52, MyWagon, true) -- SetVehicleOnGroundProperly
         SetModelAsNoLongerNeeded(model)
         if Config.seated then
@@ -415,7 +467,31 @@ function SpawnWagon(wagonModel, name, menuSpawn, id)
                 index = index + 3
             end
         end
-        MyWagon = CreateVehicle(model, node, heading, true, false, false, false)
+
+        if not huntingwagon then
+            MyWagon = CreateVehicle(model, node, heading, true, false, false, false)
+        else
+            local spawnpoint = vector4(node.x, node.y, node.z, heading)
+
+            TriggerServerEvent('bm-huntingwagon:server:SpawnWagon', spawnpoint)
+
+            Wait(1000)
+
+            MyWagon = exports['bm-huntingwagon']:MyWagonPed()
+
+            if not MyWagon or MyWagon == 0 then
+                VORPcore.NotifyRightTip(_U('wagonSpawnError'), 5000)
+            end
+
+            huntingwagonnetid = exports['bm-huntingwagon']:MyWagon()
+
+            if not huntingwagonnetid then
+                VORPcore.NotifyRightTip(_U('wagonSpawnError'), 5000)
+
+                return
+            end
+        end
+
         Citizen.InvokeNative(0x7263332501E07F52, MyWagon, true) -- SetVehicleOnGroundProperly
         SetModelAsNoLongerNeeded(model)
     end
@@ -477,6 +553,15 @@ end)
 
 RegisterNUICallback('SellWagon', function(data, cb)
     cb('ok')
+
+    local exist = NetworkGetEntityFromNetworkId(huntingwagonnetid)
+
+    if exist then
+        TriggerServerEvent('bm-huntingwagon:server:RemoveWagon', huntingwagonnetid)
+
+        huntingwagonnetid = nil
+    end
+
     DeleteEntity(MyEntity)
     Cam = false
     local wagonSold = VORPcore.Callback.TriggerAwait('bcc-wagons:SellMyWagon', data, Site)
@@ -497,8 +582,18 @@ RegisterNUICallback('CloseMenu', function(data, cb)
         DeleteEntity(ShopEntity)
         ShopEntity = nil
     end
+
     if MyEntity then
+        local exist = NetworkGetEntityFromNetworkId(huntingwagonnetid)
+
+        if exist then
+            TriggerServerEvent('bm-huntingwagon:server:RemoveWagon', huntingwagonnetid)
+
+            huntingwagonnetid = nil
+        end
+
         DeleteEntity(MyEntity)
+
         MyEntity = nil
     end
 
@@ -652,9 +747,19 @@ end
 
 function ResetWagon()
     if MyWagon then
+        local exist = NetworkGetEntityFromNetworkId(huntingwagonnetid)
+
+        if exist then
+            TriggerServerEvent('bm-huntingwagon:server:RemoveWagon', huntingwagonnetid)
+
+            huntingwagonnetid = nil
+        end
+
         DeleteEntity(MyWagon)
+
         MyWagon = nil
     end
+
     PromptsStarted = false
     TargetReturn = nil
     TargetTrade = nil
@@ -843,8 +948,18 @@ AddEventHandler('onResourceStop', function(resourceName)
         DeleteEntity(ShopEntity)
         ShopEntity = nil
     end
+
     if MyWagon then
+        local exist = NetworkGetEntityFromNetworkId(huntingwagonnetid)
+
+        if exist then
+            TriggerServerEvent('bm-huntingwagon:server:RemoveWagon', huntingwagonnetid)
+
+            huntingwagonnetid = nil
+        end
+
         DeleteEntity(MyWagon)
+
         MyWagon = nil
     end
 

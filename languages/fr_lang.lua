@@ -32,4 +32,5 @@ Locales["fr_lang"] = {
     tradeFailed = "Trade failed! ",
     tooManyWagons = " has too many wagons",
     readyToTrade = "Ready to trade wagon!",
+    wagonSpawnError = "Failed to spawn the wagon!"
 }
